@@ -7,27 +7,44 @@
 
 from paddleocr import PaddleOCR,draw_ocr
 from PIL import Image
-
+import numpy as np
 class PPOCR(object):
     def __init__(self):
         self.ocr_engine=PaddleOCR(use_angle_cls=False,lang="en")
+        self.h_thr=4
 
-    def filter_result(self,result,thr=0.85):
-        final_result=[]
+    def filter_result(self,result,thr=0.89):
+        # 按照内容过滤
+        filter_result=[]
         for content in result:
-            num_str:str=content[-1][0].replace("-","").replace(".","").strip()
-            if num_str.isnumeric() and (content[-1][1]>thr):
-                final_result.append((content[0][0],float(content[-1][0].strip())))
+            point_num=0
+            for c in content[-1][0]:
+                if c==".":
+                    point_num+=1
+            if point_num>1:
+                continue
+            num_str:str=content[-1][0].replace(".","").strip()
+            if num_str.isnumeric() and (content[-1][1]>thr) and (len(content[-1][0])<6):
+                x=0
+                y=0
+                h=(abs(content[0][0][1]-content[0][3][1])+abs(content[0][1][1]-content[0][2][1]))/2
+                for i in range(len(content[0])):
+                    x+=content[0][i][0]
+                    y+=content[0][i][1]
 
+                x=int(x//4)
+                y=int(y//4)
+
+                if 0<float(content[-1][0].strip())<500:
+                    filter_result.append(((x,y),float(content[-1][0].strip()),h))
+
+        mean=np.mean([x[-1] for x in filter_result])
+        final_result=[x[:2] for x in filter_result if abs(x[-1]-mean)<self.h_thr]
         return final_result
-
-
 
     def __call__(self,img):
         result=self.ocr_engine.ocr(img,cls=False)
         return self.filter_result(result)
-
-
 
 def test(img_path):
     ocr = PaddleOCR(use_angle_cls=False, lang="en")  # need to run only once to download and load model into memory
@@ -44,6 +61,6 @@ def test(img_path):
     im_show.show()
 
 if __name__=="__main__":
-    img_path="/data/own_dataset/indoor_meter/VA_indoor_meter/change_label/train/add1/a4b1736ffaddcd1b4d9beccaa206fc92.jpg"
+    img_path="/data/own_dataset/indoor_meter/debug_test/0db115efc8c73ba0c156763b3d8961c5.jpg"
     test(img_path)
 

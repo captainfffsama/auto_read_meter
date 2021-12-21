@@ -2,7 +2,7 @@
 '''
 @Author: CaptainHu
 @Date: 2021年 12月 09日 星期四 16:01:55 CST
-@Description: 
+@Description:
 '''
 from typing import List,Tuple
 import math
@@ -26,7 +26,7 @@ def find_cross_pt(k1,b1,k2,b2):
     if k2 is None:
         return b2,k1*b2+b1
 
-    return (b2-b1)/(k1-k2),(k1*b1-k2*b2)/(k1-k2)
+    return (b2-b1)/(k1-k2),(k1*b2-k2*b1)/(k1-k2)
 
 def get_circle_center(pts:List[Tuple[int,int]]):
     line1=find_normal_line(*pts[0],*pts[1])
@@ -34,7 +34,7 @@ def get_circle_center(pts:List[Tuple[int,int]]):
     return find_cross_pt(*line1,*line2)
 
 
-def get_angle(x1,y1,x2,y2,fix_angle=False):
+def get_angle(x1,y1,x2,y2,fix_angle=False,return_360=False):
     """计算线段角度,x1,y1 为圆上点,x2,y2为圆形
 
     Args:
@@ -44,6 +44,13 @@ def get_angle(x1,y1,x2,y2,fix_angle=False):
     angle=math.atan2((y2-y1),(x1-x2))/(math.pi/180)
     if fix_angle:
         angle=180-angle if angle>=0 else -180-angle
+
+    if return_360:
+        angle=angle if angle>=0 else 360+angle
+    return angle
+
+def angle2pi(angle):
+    angle=angle if angle>=0 else 360+angle
     return angle
 
 def get_dist(x1,y1,x2,y2) -> float:
