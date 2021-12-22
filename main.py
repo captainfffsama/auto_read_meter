@@ -222,6 +222,17 @@ def get_meter_center(pt_det_r, ori_hw):
               get_dist(*circle_pt, *(pt_det_r["max_scale"][0][:2]))) / 2
     return circle_pt, radius
 
+def get_dict_diff(diff_dict:dict):
+    diff_count_list=[(k,len(v)) for k,v in diff_dict.items()]
+    diff_count_list.sort(key=lambda x:x[-1],reverse=True)
+    candicate_k=[diff_count_list[0][0],]
+    for i in range(1,len(diff_count_list)):
+        if diff_count_list[i][-1]==diff_count_list[0][-1]:
+            candicate_k.append(diff_count_list[i][0])
+        else:
+            break
+    diff_k=min(candicate_k)
+    return diff_k,diff_dict[diff_k]
 
 def fix_ocr_scale(ocr_r, meter_center, min_scale_pt, max_scale_pt):
     # TODO: need add extern fix
@@ -267,8 +278,8 @@ def fix_ocr_scale(ocr_r, meter_center, min_scale_pt, max_scale_pt):
     for i in range(start_tmp, end_tmp):
         difference_dict[round(ocr_angle[i][-1] - ocr_angle[i - 1][-1],
                               3)].append((i - 1, i))
-    # FIXME:这里可能会有概率引起bug
-    diff = max(difference_dict.items(), key=lambda x: len(x[-1]))
+    # XXX: 改了策略,但是不能应对所有情况
+    diff=get_dict_diff(difference_dict)
 
     for i in diff[-1]:
         if abs(ocr_angle[i[0]][0] - ocr_angle[i[1]][0]) < angle_diff:
