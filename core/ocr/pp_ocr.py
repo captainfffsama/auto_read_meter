@@ -1,19 +1,59 @@
 # -*- coding: utf-8 -*-
 '''
 @Author: CaptainHu
-@Date: 2021年 12月 09日 星期四 11:11:37 CST
-@Description: 使用ppocr进行检测
+@Date: 2021年 12月 21日 星期二 16:00:40 CST
+@Description:
 '''
+import argparse
 
 from paddleocr import PaddleOCR,draw_ocr
 from PIL import Image
 import numpy as np
-class PPOCR(object):
-    def __init__(self):
-        self.ocr_engine=PaddleOCR(use_angle_cls=False,lang="en")
-        self.h_thr=4
+import cv2
+import numpy as np
+import paddleocr as pocr
+from tools.infer import predict_system
+from ppstructure.utility import init_args
 
-    def filter_result(self,result,thr=0.89):
+def get_ppocr_default_args():
+    parser=init_args()
+    parser.add_argument("--lang", type=str, default='ch')
+    parser.add_argument("--det", type=bool, default=True)
+    parser.add_argument("--rec", type=bool, default=True)
+    parser.add_argument("--type", type=str, default='ocr')
+    return parser.parse_args()
+
+class ChiebotOCR(predict_system.TextSystem):
+    def __init__(self,det_model_dir,rec_model_dir,rec_image_shape,rec_char_dict_path,rec_char_type=None,**kwargs):
+        args=get_ppocr_default_args()
+        args.__dict__["det_model_dir"]=det_model_dir
+        args.__dict__["rec_image_shape"]=rec_image_shape
+        args.__dict__["rec_model_dir"]=rec_model_dir
+        args.__dict__["rec_char_type"]=rec_char_type
+        args.__dict__["rec_char_dict_path"]=rec_char_dict_path
+        args.__dict__.update(**kwargs)
+        super().__init__(args)
+
+    def __call__(self,img,cls=True):
+        if isinstance(img, str):
+            with open(img, 'rb') as f:
+                np_arr = np.frombuffer(f.read(), dtype=np.uint8)
+                img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            if img is None:
+                print("ERROR:img is empty")
+                return None
+        if isinstance(img, np.ndarray) and len(img.shape) == 2:
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        dt_boxes, rec_res = super().__call__(img, cls)
+        return [[box.tolist(), res] for box, res in zip(dt_boxes, rec_res)]
+
+
+class OCRModel (object):
+    def __init__(self,*args,**kwargs):
+        self.ocr_engine=ChiebotOCR(*args,**kwargs)
+        self.h_thr=8
+
+    def filter_result(self,result,thr=0.85):
         # 按照内容过滤
         filter_result=[]
         for content in result:
@@ -42,25 +82,16 @@ class PPOCR(object):
         final_result=[x[:2] for x in filter_result if abs(x[-1]-mean)<self.h_thr]
         return final_result
 
-    def __call__(self,img):
-        result=self.ocr_engine.ocr(img,cls=False)
+    def __call__(self,img,no_filter=False):
+        result=self.ocr_engine(img,cls=False)
+        if no_filter:
+            return result
         return self.filter_result(result)
 
-def test(img_path):
-    ocr = PaddleOCR(use_angle_cls=False, lang="en")  # need to run only once to download and load model into memory
-    result:list = ocr.ocr(img_path, cls=False)
-    for line in result:
-        print(line)
-
-    image = Image.open(img_path).convert('RGB')
-    boxes = [line[0] for line in result]
-    txts = [line[1][0] for line in result]
-    scores = [line[1][1] for line in result]
-    im_show = draw_ocr(image, boxes, txts, scores, font_path='/home/chiebotgpuhq/MyCode/python/paddle/PaddleOCR/doc/fonts/simfang.ttf')
-    im_show = Image.fromarray(im_show)
-    im_show.show()
-
-if __name__=="__main__":
-    img_path="/data/own_dataset/indoor_meter/debug_test/0db115efc8c73ba0c156763b3d8961c5.jpg"
-    test(img_path)
-
+if __name__ == "__main__":
+    DET_MODEL_DIR= "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec"
+    REC_MODEL_DIR= "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
+    REC_CHAR_TYPE= "en"
+    REC_IMG_SHAPE= "3,32,100"
+    REC_CHAR_DICT_PATH="/home/chiebotgpuhq/MyCode/python/paddle/PaddleOCR/ppocr/utils/ppocr_keys_v1.txt"
+    a=ChiebotOCR(DET_MODEL_DIR,REC_MODEL_DIR,REC_IMG_SHAPE,REC_CHAR_DICT_PATH,REC_IMG_SHAPE)

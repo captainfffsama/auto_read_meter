@@ -1,5 +1,6 @@
 # create by https://github.com/iamcco/coc-gitignore (Fri Dec 10 2021 16:06:03 GMT+0800 (中国标准时间))
 .vscode/
+model_weight/
 # Python.gitignore:
 # Byte-compiled / optimized / DLL files
 __pycache__/

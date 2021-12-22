@@ -22,28 +22,20 @@ import torch.nn.functional as F
 from torchvision import transforms
 
 from core.pt_detection.pt_det_net import PointDetectNet
-from core.ocr.pp_ocr import PPOCR
 from core.utils import get_circle_center, get_angle, get_dist, find_normal_line, find_cross_pt
-
+from core.config.base_config import get_cfg_defaults
+from core.ocr.pp_ocr import OCRModel
 import debug_tools as D
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="infer args set")
     parser.add_argument(
-        "--checkpoint",
+        "--cfg",
         type=str,
-        default="/data/experiments_data/point_weight/3pt.ckpt",
+        default="./config/cfgv1.yaml",
         help="",
     )
-    parser.add_argument(
-        "--data_dir",
-        type=str,
-        default=
-        # "/data/own_dataset/indoor_meter/VA_indoor_meter/change_label/test")
-        "/data/own_dataset/indoor_meter/debug_test")
-        # "/home/chiebotgpuhq/Share/win_share/22222")
-        # "/data/own_dataset/indoor_meter/自己拍摄_电压表")
     args = parser.parse_args()
     return args
 
@@ -51,11 +43,13 @@ def parse_args():
 def init_model(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = PointDetectNet(3).to(device)
-    if os.path.exists(args.checkpoint):
-        params = torch.load(args.checkpoint)
+    if os.path.exists(args.PT_DET.CKPT):
+        params = torch.load(args.PT_DET.CKPT)
         model.load_state_dict(params, strict=False)
 
-    ocr = PPOCR()
+    ocr =OCRModel(args.OCR.DET.DET_MODEL_DIR, args.OCR.REG.REC_MODEL_DIR,
+                     args.OCR.REG.REC_IMAGE_SHAPE, args.OCR.REG.REC_CHAR_DICT_PATH,
+                     args.OCR.REG.REC_CHAR_TYPE)
 
     return model, ocr
 
@@ -233,24 +227,12 @@ def fix_ocr_scale(ocr_r, meter_center, min_scale_pt, max_scale_pt):
     # TODO: need add extern fix
     ocr_r.sort(key=lambda x: x[-1])
 
-    difference_dict = defaultdict(list)
-    for i in range(1, len(ocr_r)):
-        difference_dict[round(ocr_r[i][-1] - ocr_r[i - 1][-1], 3)].append(
-            (i - 1, i))
-    # FIXME:这里可能会有概率引起bug
-    diff = max(difference_dict.items(), key=lambda x: len(x[-1]))
-
     ocr_angle = [(get_angle(*i[0], *meter_center, True), i[-1]) for i in ocr_r]
     base_angle = min(ocr_angle, key=lambda x: x[0])[0]
     ocr_angle = [(int(i[0] - base_angle), i[1]) for i in ocr_angle]
     angle_diff = 360
-    for i in diff[-1]:
-        if abs(ocr_angle[i[0]][0] - ocr_angle[i[1]][0]) < angle_diff:
-            angle_diff = abs(ocr_angle[i[0]][0] - ocr_angle[i[1]][0])
 
-    print("original ocr_angle:",ocr_angle)
-
-    scale_diff = diff[0]
+    print("original ocr_angle:", ocr_angle)
     # 添加头尾刻度修
     min_scale_ag = get_angle(*min_scale_pt, *meter_center, True) - base_angle
     max_scale_ag = get_angle(*max_scale_pt, *meter_center, True) - base_angle
@@ -269,21 +251,42 @@ def fix_ocr_scale(ocr_r, meter_center, min_scale_pt, max_scale_pt):
     # pprint(max_scale_ag)
 
     if not max_scale_is_exist:
-        ocr_angle.append((max_scale_ag, max_scale + round((max_scale_ag-ocr_angle[-1][0])/angle_diff)*scale_diff))
+        ocr_angle.append((max_scale_ag, None))
     # TODO: 由于大部分的表在接近零的地方不是线性变化,这里最好单独处理
     if not zero_scale_is_exist:
         ocr_angle.insert(0, (min_scale_ag, 0))
         base_angle = base_angle + min_scale_ag
         # NOTE: 去除负角度,但是这样要求表的量程差不能大于180度
-        ocr_angle = [(x[0] - min_scale_ag, x[1]) for x in ocr_angle]
-        for k,v in difference_dict.items():
-            difference_dict[k]=[(x[0]+1,x[1]+1) for x in v]
-        difference_dict[round(ocr_angle[1][-1]-ocr_angle[0][-1], 3)].append((0,1))
-        if not max_scale_is_exist:
-            print("add max!!!")
-            difference_dict[round(ocr_angle[-1][-1]-ocr_angle[-2][-1],3)].append((len(ocr_angle)-2,len(ocr_angle)-1))
-    print("add 0 and max:",ocr_angle)
+        ocr_angle = [(x[0] - min_scale_ag, x[1]) for x in ocr_angle
+                     if (x[0] - min_scale_ag) >= 0]
+    print("add 0 and max:", ocr_angle)
 
+    difference_dict = defaultdict(list)
+    start_tmp = 1 if zero_scale_is_exist else 2
+    end_tmp = len(ocr_angle) if max_scale_is_exist else len(ocr_angle) - 1
+    for i in range(start_tmp, end_tmp):
+        difference_dict[round(ocr_angle[i][-1] - ocr_angle[i - 1][-1],
+                              3)].append((i - 1, i))
+    # FIXME:这里可能会有概率引起bug
+    diff = max(difference_dict.items(), key=lambda x: len(x[-1]))
+
+    for i in diff[-1]:
+        if abs(ocr_angle[i[0]][0] - ocr_angle[i[1]][0]) < angle_diff:
+            angle_diff = abs(ocr_angle[i[0]][0] - ocr_angle[i[1]][0])
+
+    scale_diff = diff[0]
+    print("scale diff is {}".format(scale_diff))
+    pprint(difference_dict)
+    print("angle diff is {}".format(angle_diff))
+    if not max_scale_is_exist:
+        # TODO: 这里补全的规则还要考量一下,目前补全方式也不够科学
+        ocr_angle[-1] = (ocr_angle[-1][0], max_scale + round(
+            (ocr_angle[-1][0] - ocr_angle[-2][0]) / angle_diff) * scale_diff)
+        difference_dict[round(ocr_angle[-1][-1] - ocr_angle[-2][-1],
+                              3)].append(
+                                  (len(ocr_angle) - 2, len(ocr_angle) - 1))
+
+    # 中间补足
     insert_time = 0
     for k, v in difference_dict.items():
         current_insert_time = k // scale_diff
@@ -298,8 +301,10 @@ def fix_ocr_scale(ocr_r, meter_center, min_scale_pt, max_scale_pt):
                     ),
                 )
                 insert_time += 1
-
-    print("fix over:",ocr_angle)
+    if not zero_scale_is_exist:
+        ocr_angle.insert(1, ((ocr_angle[0][0] + ocr_angle[1][0]) / 2,
+                             (ocr_angle[0][1] + ocr_angle[1][1]) / 2))
+    print("fix over:", ocr_angle)
 
     return ocr_angle, base_angle
 
@@ -313,12 +318,32 @@ def get_num(ocr_angle: list, base_angle, circle_pt, pt_det_r):
     spt2 = pt_det_r["big_label"][0][:2]
     spt1_angle = get_angle(*spt1, *circle_pt, True) - base_angle
     spt2_angle = get_angle(*spt2, *circle_pt, True) - base_angle
+    #两者重合了
+    #TODO: 这里处理还需要细化
+    if abs(spt1_angle - spt2_angle) < 1:
+        print("spt1 spt2 is same,spt1 angle is{},spt2 angle is {}".format(
+            spt1_angle, spt2_angle))
+        spt2_scale = min(ocr_angle, key=lambda x: abs(x[0] - spt2_angle))[-1]
+        return spt2_scale
 
     pt = pt_det_r["pointer"][0][:2]
     pt_angle = get_angle(*pt, *circle_pt, True) - base_angle
 
-    spt1_scale = min(ocr_angle, key=lambda x: abs(x[0] - spt1_angle))[-1]
-    spt2_scale = min(ocr_angle, key=lambda x: abs(x[0] - spt2_angle))[-1]
+    spt1_scale_sort_list = sorted(ocr_angle,
+                                  key=lambda x: abs(x[0] - spt1_angle))
+    spt2_scale_sort_list = sorted(ocr_angle,
+                                  key=lambda x: abs(x[0] - spt2_angle))
+    if spt1_scale_sort_list[0] == spt2_scale_sort_list[0]:
+        if abs(spt1_scale_sort_list[0][0] -
+               spt1_angle) > abs(spt2_scale_sort_list[0][0] - spt2_angle):
+            spt1_scale = spt1_scale_sort_list[1][-1]
+            spt2_scale = spt2_scale_sort_list[0][-1]
+        else:
+            spt1_scale = spt1_scale_sort_list[0][-1]
+            spt2_scale = spt2_scale_sort_list[1][-1]
+    else:
+        spt1_scale = spt1_scale_sort_list[0][-1]
+        spt2_scale = spt2_scale_sort_list[0][-1]
 
     if spt1_scale == spt2_scale:
         print("detect some thing wrong")
@@ -344,7 +369,7 @@ def main(args):
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
 
-    imgs_path = get_all_file_path(args.data_dir)
+    imgs_path = get_all_file_path(args.IMG_DIR)
 
     with torch.no_grad():
         for img_path in imgs_path:
@@ -362,7 +387,7 @@ def main(args):
             # TODO:因为这里只有一张图片,简单处理
             pt_result = fix_pt_detect_result(result[0], resize_rate)
             ocr_result = ocr(img_path)
-            if len(ocr_result)<2:
+            if len(ocr_result) < 2:
                 pprint(ocr_result)
                 print("ocr result too less")
                 continue
@@ -379,4 +404,7 @@ def main(args):
 
 if __name__ == "__main__":
     args = parse_args()
-    main(args)
+    cfg = get_cfg_defaults()
+    cfg.merge_from_file(args.cfg)
+    cfg.freeze()
+    main(cfg)
