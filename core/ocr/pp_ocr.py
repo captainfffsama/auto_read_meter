@@ -53,7 +53,7 @@ class OCRModel (object):
         self.ocr_engine=ChiebotOCR(*args,**kwargs)
         self.h_thr=8
 
-    def filter_result(self,result,thr=0.85):
+    def filter_result(self,result,thr=0.7):
         # 按照内容过滤
         filter_result=[]
         for content in result:

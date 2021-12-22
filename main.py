@@ -25,6 +25,8 @@ from core.pt_detection.pt_det_net import PointDetectNet
 from core.utils import get_circle_center, get_angle, get_dist, find_normal_line, find_cross_pt
 from core.config.base_config import get_cfg_defaults
 from core.ocr.pp_ocr import OCRModel
+from core.meter_det.darknet.d_yolo import DarknetDet
+
 import debug_tools as D
 
 
@@ -43,19 +45,23 @@ def parse_args():
 def init_model(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = PointDetectNet(3).to(device)
-    if os.path.exists(args.PT_DET.CKPT):
-        params = torch.load(args.PT_DET.CKPT)
+    if os.path.exists(args.PT_DET.ckpt):
+        params = torch.load(args.PT_DET.ckpt)
         model.load_state_dict(params, strict=False)
 
-    ocr =OCRModel(args.OCR.DET.DET_MODEL_DIR, args.OCR.REG.REC_MODEL_DIR,
-                     args.OCR.REG.REC_IMAGE_SHAPE, args.OCR.REG.REC_CHAR_DICT_PATH,
-                     args.OCR.REG.REC_CHAR_TYPE)
+    ocr =OCRModel(args.OCR.DET.det_model_dir, args.OCR.REG.rec_model_dir,
+                     args.OCR.REG.rec_image_shape, args.OCR.REG.rec_char_dict_path,
+                     args.OCR.REG.rec_char_type)
 
-    return model, ocr
+    meter_det=DarknetDet(**args.METER_DET)
+
+    return model, ocr,meter_det
 
 
-def img_deal(img_path, basic_transform, img_resize):
-    img = cv2.imread(img_path)
+def img_deal(img, basic_transform, img_resize):
+    if isinstance(img,str):
+        img = cv2.imread(img)
+    ori_img=deepcopy(img)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     ori_hw = img.shape[:2]
 
@@ -216,8 +222,7 @@ def get_meter_center(pt_det_r, ori_hw):
 
     circle_pt = get_circle_center(compute_pts)
     if not (0 < circle_pt[1] < ori_hw[0] and 0 < circle_pt[0] < ori_hw[1]):
-        # FIXME:
-        breakpoint()
+        return (-1,-1),-1
     radius = (get_dist(*circle_pt, *(pt_det_r["min_scale"][0][:2])) +
               get_dist(*circle_pt, *(pt_det_r["max_scale"][0][:2]))) / 2
     return circle_pt, radius
@@ -270,7 +275,6 @@ def fix_ocr_scale(ocr_r, meter_center, min_scale_pt, max_scale_pt):
         # NOTE: 去除负角度,但是这样要求表的量程差不能大于180度
         ocr_angle = [(x[0] - min_scale_ag, x[1]) for x in ocr_angle
                      if (x[0] - min_scale_ag) >= 0]
-    print("add 0 and max:", ocr_angle)
 
     difference_dict = defaultdict(list)
     start_tmp = 1 if zero_scale_is_exist else 2
@@ -296,6 +300,7 @@ def fix_ocr_scale(ocr_r, meter_center, min_scale_pt, max_scale_pt):
         difference_dict[round(ocr_angle[-1][-1] - ocr_angle[-2][-1],
                               3)].append(
                                   (len(ocr_angle) - 2, len(ocr_angle) - 1))
+    print("add 0 and max:", ocr_angle)
 
     # 中间补足
     insert_time = 0
@@ -370,9 +375,14 @@ def get_num(ocr_angle: list, base_angle, circle_pt, pt_det_r):
         big_s - small_s) + small_s
     return num
 
+def get_meter_img(img,meter_det_result):
+    _,x1,y1, x2, y2=meter_det_result[0]
+    meter_img=img[y1:y2,x1:x2,:]
+    return meter_img,(x1,y1)
+
 
 def main(args):
-    model, ocr = init_model(args)
+    model, ocr,meter_det = init_model(args)
     model.eval()
 
     basic_transform = transforms.Compose([
@@ -380,12 +390,15 @@ def main(args):
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
 
-    imgs_path = get_all_file_path(args.IMG_DIR)
+    imgs_path = get_all_file_path(args.img_dir)
 
     with torch.no_grad():
         for img_path in imgs_path:
-            print(img_path)
-            img, resize_rate, ori_hw = img_deal(img_path, basic_transform,
+            ori_img=cv2.imread(img_path)
+            meter_det_result=meter_det(ori_img)
+            meter_img,fix_pos=get_meter_img(ori_img,meter_det_result)
+
+            img, resize_rate, ori_hw = img_deal(meter_img, basic_transform,
                                                 (416, 416))
             scm, srm, pmcm, pmrm, rcm, rrm = model(img.cuda())
 
@@ -397,13 +410,15 @@ def main(args):
 
             # TODO:因为这里只有一张图片,简单处理
             pt_result = fix_pt_detect_result(result[0], resize_rate)
-            ocr_result = ocr(img_path)
+            ocr_result = ocr(meter_img)
             if len(ocr_result) < 2:
                 pprint(ocr_result)
                 print("ocr result too less")
                 continue
 
             circle_pt, radius = get_meter_center(pt_result, ori_hw)
+            if radius<0:
+                raise Exception("can not find circle center")
             ocr_angle, base_angle = fix_ocr_scale(
                 ocr_result, circle_pt, pt_result["min_scale"][0][:2],
                 pt_result["max_scale"][0][:2])

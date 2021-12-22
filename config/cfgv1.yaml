@@ -1,16 +1,23 @@
+METER_DET:
+  config_file: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.cfg"
+  names_file: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.names"
+  weights: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.weights"
+  thr: 0.8
+  class_filter: ["meter_square"]
 OCR:
   DET:
-    DET_MODEL_DIR: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec"
+    det_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec"
 
   REG:
-    REC_MODEL_DIR: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
-    REC_CHAR_TYPE: "en"
-    REC_IMAGE_SHAPE: " 3,32,100 "
+    rec_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
+    rec_char_type: "en"
+    # 这里空格不要去除
+    rec_image_shape: " 3,32,100 "
 
 PT_DET:
-  CKPT: "/data/experiments_data/point_weight/3pt.ckpt"
+  ckpt: "/data/experiments_data/point_weight/3pt.ckpt"
 
 # IMG_DIR: "/data/own_dataset/indoor_meter/debug_test"
 # IMG_DIR: "/data/own_dataset/indoor_meter/VA_indoor_meter/change_label/test")
-IMG_DIR: "/home/chiebotgpuhq/Share/win_share/22222"
+img_dir: "/home/chiebotgpuhq/Share/win_share/22222"
 # IMG_DIR: "/data/own_dataset/indoor_meter/自己拍摄_电压表"
