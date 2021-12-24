@@ -35,7 +35,7 @@ def draw_frame(img, img_info: ImageInfoContainer):
                       COLOR_MAP["2"], 3)
         if meter_info.num is not None:
             cv2.putText(frame, str(meter_info.num),
-                        (meter_tl[0] - 30, meter_tl[1] - 30), font, 2,
+                        (meter_tl[0] - 10, meter_tl[1] - 10), font, 2,
                         COLOR_MAP["3"], 2)
         # TODO: draw messages
         if meter_info.circle_pt[0] < 0:

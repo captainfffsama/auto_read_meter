@@ -80,6 +80,8 @@ class InferToolsMixin(object):
             else:
                 break
         diff_k = min(candicate_k)
+        if diff_k==0:
+            breakpoint()
         return diff_k, diff_dict[diff_k]
 
     def fix_ocr_scale(self, ocr_r, meter_center, min_scale_pt, max_scale_pt):
@@ -273,7 +275,7 @@ class Infer(InferToolsMixin):
                 circle_pt, radius = self.get_meter_center(pt_result, ori_hw)
                 obj_debug_info.circle_pt = circle_pt
                 if radius < 0:
-                    obj_debug_info.messages("can not find circle center")
+                    obj_debug_info.messages.append("can not find circle center")
                     self.debug_info_container.meters_info.append(
                         obj_debug_info)
                     continue
