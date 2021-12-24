@@ -4,8 +4,9 @@
 @Date: 2021年 09月 10日 星期五 16:19:47 CST
 @Description: 模型
 '''
-from typing import List
+from typing import List,Dict,Tuple
 import math
+from collections import defaultdict
 
 import torch
 import torch.nn as nn
@@ -101,9 +102,68 @@ class PointDetectNet(nn.Module):
 
         r_grid=generate_meshgrid(x_range_reg.shape,x_range_reg.device,x_range_reg.dtype).mul(self.downsample_rate)+self.center_bias
         r_coord=r_grid+x_range_reg*self.center_bias
+        x_scale_cls=self.filter_cm(x_scale_cls)
+        x_mp_cls=self.filter_cm(x_mp_cls)
+        x_range_cls=self.filter_cm(x_range_cls)
         return x_scale_cls,s_coord,x_mp_cls,mp_coord,x_range_cls,r_coord
 
+    def filter_cm(self,cls_map):
+        cls_map_p = F.max_pool2d(cls_map, kernel_size=11, stride=1, padding=5)
+        cls_map[cls_map != cls_map_p] = 0
+        # cls_map[cls_map<=0.3]=0
+        return cls_map
 
 
+class PtDetInfer:
+    def __init__(self,pt_model):
+        self.model=pt_model
+        self.model.eval()
+
+    def decode_feature_map(self,c_feature_map, r_feature_map, label_list, result_dict):
+        ori_cm_shape = c_feature_map.shape[1:]
+        for i, label in enumerate(label_list):
+            pt_idx = c_feature_map[i].argmax()
+            pt_yi = pt_idx // ori_cm_shape[-1]
+            pt_xi = pt_idx % ori_cm_shape[0]
+            pt_score = c_feature_map[i, pt_yi, pt_xi]
+
+            pt_x = r_feature_map[2 * i, pt_yi, pt_xi]
+            pt_y = r_feature_map[2 * i + 1, pt_yi, pt_xi]
+            result_dict[label].append(
+                (pt_x.item(), pt_y.item(), pt_score.item()))
 
 
+    def d_map(self,scm, srm, pmcm, pmrm, rcm, rrm, d_rate):
+        result: List[dict] = []
+
+        for one_img_scm, one_img_srm, one_img_pmcm, one_img_pmrm, one_img_rcm, one_img_rrm in zip(
+                scm, srm, pmcm, pmrm, rcm, rrm):
+            ori_cm_shape = one_img_scm.shape[1:]
+            one_img_result = defaultdict(list)
+            self.decode_feature_map(one_img_scm, one_img_srm,
+                            ("min_scale", "max_scale"), one_img_result)
+            self.decode_feature_map(one_img_pmcm, one_img_pmrm, ("pointer", ),
+                            one_img_result)
+            self.decode_feature_map(one_img_rcm, one_img_rrm,
+                            ("small_label", "big_label"), one_img_result)
+
+            result.append(one_img_result)
+
+        return result
+
+    def fix_pt_detect_result(self,result: dict, resize_rate: float):
+        for k in result.keys():
+            result[k] = [(x[0] / resize_rate, x[1] / resize_rate, x[2])
+                        for x in result[k]]
+        return result
+
+    def __call__(self,img,resize_rate=None) -> Dict[str,List[Tuple[int,int,float]]]:
+        with torch.no_grad():
+            scm, srm, pmcm, pmrm, rcm, rrm = self.model(img.cuda())
+            result = self.d_map(scm, srm, pmcm, pmrm, rcm, rrm,
+                                self.model.downsample_rate)
+            result=result[0]
+            if resize_rate is not None:
+                result=self.fix_pt_detect_result(result,resize_rate)
+
+        return result

@@ -79,19 +79,17 @@ class DarknetDet(object):
                                           _darknet_image,
                                           thresh=self.thr)
         darknet.free_image(_darknet_image)
-        image = darknet.draw_boxes(detections, img, self.class_colors)
-        return self.result_process(detections, resize_rate)
+        return self.result_process(detections, resize_rate),detections
 
-    def debug(self, image):
-        result = self(image)
-        img, resize_rate = self._img_precess(image)
-        image = darknet.draw_boxes(result, img, self.class_colors)
+    def debug(self, img):
+        result,r = self(img)
+        image = darknet.draw_boxes(r, img, self.class_colors)
 
         return result, image
 
 
 if __name__ == "__main__":
-    img = cv2.imread("/home/chiebotgpuhq/Share/win_share/22222/1.jpg")
+    img = cv2.imread("/home/chiebotgpuhq/Share/win_share/22222/2.jpg")
     det_model = DarknetDet(
         "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.cfg",
         "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.names",
@@ -99,5 +97,7 @@ if __name__ == "__main__":
         class_filter={
             "meter_square",
         })
-    r = det_model(img)
+    r,image = det_model.debug(img)
     print(r)
+    cv2.imshow(image)
+    cv2.waitKey()

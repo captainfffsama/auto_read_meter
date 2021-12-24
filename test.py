@@ -1,11 +1,22 @@
-import core.utils as u
+from typing import overload
 
-pt1=(0,0)
-pt2=(1,1)
-pt3=(0,1)
-pt4=(0,2)
-print(u.get_angle(*pt1,*pt2))
-print(u.get_angle(*pt1,*pt2,True))
-print(u.get_angle(*pt3,*pt2))
-print(u.get_angle(*pt3,*pt2,True))
-print(u.get_angle(*pt4,*pt2,True))
+
+class Q:
+    def __init__(self):
+        self.s_n=1
+
+    def p(self):
+        print(self.s_n)
+    
+
+class Test(Q):
+    def __init__(self):
+        self.s_n=2
+
+
+def main():
+    test=Test()
+    test.p()
+if __name__=="__main__":
+    main()
+
