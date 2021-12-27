@@ -5,7 +5,6 @@
 """
 import os
 import argparse
-from pprint import pprint
 
 import cv2
 

@@ -17,7 +17,8 @@ OCR:
 PT_DET:
   ckpt: "/data/experiments_data/point_weight/3pt.ckpt"
 
-data_path: "cam:0"
+# data_path: "cam:0"
+data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/20211223"
 # IMG_DIR: "/data/own_dataset/indoor_meter/debug_test"
 # IMG_DIR: "/data/own_dataset/indoor_meter/VA_indoor_meter/change_label/test")
 # data_path: "/home/chiebotgpuhq/Share/win_share/22222"

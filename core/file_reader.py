@@ -44,7 +44,7 @@ class DataSequence(object):
                     self._data_list.read()
 
             else:
-                raise ValueError("file_path must be dir or video num")
+                raise ValueError("file_path must be dir or video num,video num should like \"cam:0\"")
 
     @property
     def type(self):
@@ -56,6 +56,8 @@ class DataSequence(object):
                 if self.stop_flag:
                     break
                 if isinstance(self._data_list, list):
+                    if self._count>=len(self._data_list):
+                        raise StopIteration
                     current_img_path = self._data_list[
                         self._count]  # type: ignore
                     img = cv2.imread(current_img_path)

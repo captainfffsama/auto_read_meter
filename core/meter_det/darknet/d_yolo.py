@@ -11,7 +11,7 @@ class DarknetDet(object):
                  config_file,
                  names_file,
                  weights,
-                 thr=0.5,
+                 thr=0.1,
                  batch_size=1,
                  class_filter=None):
         self.network, self.class_names, self.class_colors = darknet.load_network(
@@ -79,11 +79,16 @@ class DarknetDet(object):
                                           _darknet_image,
                                           thresh=self.thr)
         darknet.free_image(_darknet_image)
-        return self.result_process(detections, resize_rate),detections
+        final_result=self.result_process(detections, resize_rate)
+        return final_result,detections
 
     def debug(self, img):
         result,r = self(img)
-        image = darknet.draw_boxes(r, img, self.class_colors)
+        show_result=[]
+        for rr in result:
+            pos=((rr[1]+rr[3])//2,(rr[2]+rr[4])//2,rr[3]-rr[1],rr[4]-rr[2])
+            show_result.append((rr[0],"1",pos))
+        image = darknet.draw_boxes(show_result, img, self.class_colors)
 
         return result, image
 
