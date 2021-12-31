@@ -2,7 +2,7 @@
 '''
 @Author: CaptainHu
 @Date: 2021年 12月 27日 星期一 11:06:06 CST
-@Description:
+@Description: 用于采集数据
 '''
 
 import os

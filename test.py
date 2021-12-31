@@ -2,21 +2,19 @@ from typing import overload
 
 
 class Q:
-    def __init__(self):
-        self.s_n=1
+    def add(self,a,b):
+        return a+b
 
-    def p(self):
-        print(self.s_n)
-    
+    def test(self):
+        func=getattr(self,"add")
+        return func(1,2)
 
-class Test(Q):
-    def __init__(self):
-        self.s_n=2
 
 
 def main():
-    test=Test()
-    test.p()
+    test=Q()
+    print(test.test())
+    breakpoint()
 if __name__=="__main__":
     main()
 

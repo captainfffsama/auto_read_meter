@@ -9,14 +9,14 @@ from paddleocr import PaddleOCR, draw_ocr
 from PIL import Image
 from core.config.base_config import get_cfg_defaults
 from core.ocr.pp_ocr import OCRModel
-from main import get_all_file_path
+from core.file_reader import get_all_file_path
 
 def parse_args():
     parser = argparse.ArgumentParser(description="infer args set")
     parser.add_argument(
         "--cfg",
         type=str,
-        default="./config/cfgv1.yaml",
+        default="./config/cfgv2.yaml",
         help="",
     )
     args = parser.parse_args()
@@ -37,11 +37,9 @@ def draw_ocr_result(ocr_model,img_path):
     im_show.show(title=img_path)
 
 def main(args):
-    ocr =OCRModel(args.OCR.DET.DET_MODEL_DIR, args.OCR.REG.REC_MODEL_DIR,
-                     args.OCR.REG.REC_IMAGE_SHAPE, args.OCR.REG.REC_CHAR_DICT_PATH,
-                     args.OCR.REG.REC_CHAR_TYPE)
+    ocr =OCRModel(args.OCR.DET.det_model_dir, **args.OCR.REG)
 
-    imgs_path = get_all_file_path(args.IMG_DIR)
+    imgs_path = get_all_file_path(args.data_path)
 
     for img_path in imgs_path:
         print(img_path)

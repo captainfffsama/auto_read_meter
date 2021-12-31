@@ -9,10 +9,11 @@ OCR:
     det_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec"
 
   REG:
-    rec_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
-    rec_char_type: "en"
+    rec_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/3"
+    # rec_char_type: "en"
     # 这里空格不要去除
     rec_image_shape: " 3,32,100 "
+    rec_char_dict_path: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/num_dict.txt"
 
 PT_DET:
   ckpt: "/data/experiments_data/point_weight/3pt.ckpt"

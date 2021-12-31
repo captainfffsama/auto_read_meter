@@ -25,8 +25,7 @@ _C.OCR.DET.det_model_dir = ""
 _C.OCR.REG = CN()
 _C.OCR.REG.rec_model_dir = ""
 _C.OCR.REG.rec_char_type = ""
-_C.OCR.REG.rec_image_shape = ""
-# _C.OCR.REG.REC_CHAR_DICT_PATH="/home/chiebotgpuhq/MyCode/python/paddle/PaddleOCR/ppocr/utils/ppocr_keys_v1.txt"
+_C.OCR.REG.rec_image_shape = " 3,32,100"
 _C.OCR.REG.rec_char_dict_path = os.path.join(CURRENT_FILE_DIR,
                                              "../../en_dict.txt")
 
