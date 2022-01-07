@@ -4,15 +4,14 @@ METER_DET:
   weights: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.weights"
   thr: 0.8
   class_filter: ["meter_square"]
-OCR:
-  DET:
-    det_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec"
 
-  REG:
-    rec_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
-    rec_char_type: "en"
-    # 这里空格不要去除
-    rec_image_shape: " 3,32,100 "
+OCR:
+  det_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec"
+
+  rec_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
+  rec_char_type: "en"
+  # 这里空格不要去除
+  rec_image_shape: " 3,32,100 "
 
 PT_DET:
   ckpt: "/data/experiments_data/point_weight/3pt.ckpt"

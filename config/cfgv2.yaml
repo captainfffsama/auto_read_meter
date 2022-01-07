@@ -5,21 +5,21 @@ METER_DET:
   thr: 0.8
   class_filter: ["meter_square"]
 OCR:
-  DET:
-    det_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec"
+  det_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec"
 
-  REG:
-    rec_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/3"
-    # rec_char_type: "en"
-    # 这里空格不要去除
-    rec_image_shape: " 3,32,100 "
-    rec_char_dict_path: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/num_dict.txt"
+  rec_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
+  rec_char_type: "en"
+  # 这里空格不要去除
+  rec_image_shape: " 3,32,100 "
+  # rec_char_dict_path: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/num_dict.txt"
+  h_thr: 8
+  filter_thr: 0.8
 
 PT_DET:
-  ckpt: "/data/experiments_data/point_weight/3pt.ckpt"
+  ckpt: "/data/experiments_data/point_weight/3pt_1.ckpt"
 
-# data_path: "cam:0"
-data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/2"
+data_path: "cam:0"
+# data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/2"
 # IMG_DIR: "/data/own_dataset/indoor_meter/debug_test"
 # IMG_DIR: "/data/own_dataset/indoor_meter/VA_indoor_meter/change_label/test")
 # data_path: "/home/chiebotgpuhq/Share/win_share/22222"

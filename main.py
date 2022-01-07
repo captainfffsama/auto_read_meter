@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument(
         "--cfg",
         type=str,
-        default="./config/cfgv1.yaml",
+        default="./config/cfgv2.yaml",
         help="",
     )
     args = parser.parse_args()
@@ -44,9 +44,7 @@ def init_model(args):
         model.load_state_dict(params, strict=False)
     model = PtDetInfer(model)
 
-    ocr = OCRModel(args.OCR.DET.det_model_dir, args.OCR.REG.rec_model_dir,
-                   args.OCR.REG.rec_image_shape,
-                   args.OCR.REG.rec_char_dict_path, args.OCR.REG.rec_char_type)
+    ocr = OCRModel(**args.OCR)
 
     meter_det = DarknetDet(**args.METER_DET)
 

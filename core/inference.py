@@ -18,6 +18,9 @@ from core.tools.info_container import ImageInfoContainer, MeterInfoContainer, po
 from core.pt_detection.pt_det_net import PtDetInfer
 from core.ocr.pp_ocr import OCRModel
 from core.meter_det.darknet.d_yolo import DarknetDet
+from core.status_enum import OCRStatus
+
+import debug_tools as D
 
 
 class InferToolsMixin(object):
@@ -71,17 +74,22 @@ class InferToolsMixin(object):
     def get_dict_diff(self, diff_dict: dict):
         diff_count_list = [(k, len(v)) for k, v in diff_dict.items()]
         diff_count_list.sort(key=lambda x: x[-1], reverse=True)
-        candicate_k = [
-            diff_count_list[0][0],
-        ]
+        try:
+            candicate_k = [
+                diff_count_list[0][0],
+            ]
+        except Exception as e:
+            breakpoint()
         for i in range(1, len(diff_count_list)):
             if diff_count_list[i][-1] == diff_count_list[0][-1]:
                 candicate_k.append(diff_count_list[i][0])
             else:
                 break
-        diff_k = min(candicate_k)
-        if diff_k==0:
+        candicate_k_t=[x for x in candicate_k if x>0]
+        if not candicate_k_t:
             breakpoint()
+            raise ValueError("candicate should not be empty")
+        diff_k = min(candicate_k_t)
         return diff_k, diff_dict[diff_k]
 
     def fix_ocr_scale(self, ocr_r, meter_center, min_scale_pt, max_scale_pt):
@@ -125,12 +133,19 @@ class InferToolsMixin(object):
                          if (x[0] - min_scale_ag) >= 0]
 
         difference_dict = defaultdict(list)
+        # TODO: 这里逻辑需要再次梳理
         start_tmp = 1 if zero_scale_is_exist else 2
         end_tmp = len(ocr_angle) if max_scale_is_exist else len(ocr_angle) - 1
         for i in range(start_tmp, end_tmp):
             difference_dict[round(ocr_angle[i][-1] - ocr_angle[i - 1][-1],
                                   3)].append((i - 1, i))
         # XXX: 改了策略,但是不能应对所有情况
+        if not difference_dict:
+            print("difference_dict should not be empty")
+            breakpoint()
+        for i in difference_dict.keys():
+            if i ==0:
+                breakpoint()
         diff = self.get_dict_diff(difference_dict)
 
         for i in diff[-1]:
@@ -262,10 +277,11 @@ class Infer(InferToolsMixin):
                     k: [(*pos_fix(x[:2], fix_pos), x[-1]) for x in v]
                     for k, v in pt_result.items()
                 }
-                ocr_result = self.ocr_model(meter_img)
+                ocr_result,ocr_status = self.ocr_model(meter_img)
+
                 obj_debug_info.ocr_result = [(pos_fix(x[0], fix_pos), x[-1])
                                              for x in ocr_result]
-                if len(ocr_result) < 2:
+                if ocr_status != OCRStatus.OK:
                     pprint(ocr_result)
                     obj_debug_info.messages.append("ocr result too less")
                     self.debug_info_container.meters_info.append(
@@ -279,12 +295,15 @@ class Infer(InferToolsMixin):
                     self.debug_info_container.meters_info.append(
                         obj_debug_info)
                     continue
-                ocr_angle, base_angle = self.fix_ocr_scale(
-                    ocr_result, circle_pt, pt_result["min_scale"][0][:2],
-                    pt_result["max_scale"][0][:2])
+                if ocr_status == OCRStatus.OK:
+                    ocr_angle, base_angle = self.fix_ocr_scale(
+                        ocr_result, circle_pt, pt_result["min_scale"][0][:2],
+                        pt_result["max_scale"][0][:2])
 
-                num = self.get_num(ocr_angle, base_angle, circle_pt, pt_result)
-                obj_debug_info.num = num
+                    num = self.get_num(ocr_angle, base_angle, circle_pt, pt_result)
+                    obj_debug_info.num = num
+                else:
+                    num=-1
                 final_result.append((tuple(one_md_result[1:]), num))
                 self.debug_info_container.meters_info.append(obj_debug_info)
 

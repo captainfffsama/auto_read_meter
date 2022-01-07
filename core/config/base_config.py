@@ -19,15 +19,15 @@ _C.METER_DET.batch_size = 1
 _C.METER_DET.class_filter = ()
 
 _C.OCR = CN()
-_C.OCR.DET = CN()
-_C.OCR.DET.det_model_dir = ""
+_C.OCR.det_model_dir = ""
 
-_C.OCR.REG = CN()
-_C.OCR.REG.rec_model_dir = ""
-_C.OCR.REG.rec_char_type = ""
-_C.OCR.REG.rec_image_shape = " 3,32,100"
-_C.OCR.REG.rec_char_dict_path = os.path.join(CURRENT_FILE_DIR,
+_C.OCR.rec_model_dir = ""
+_C.OCR.rec_char_type = ""
+_C.OCR.rec_image_shape = " 3,32,100"
+_C.OCR.rec_char_dict_path = os.path.join(CURRENT_FILE_DIR,
                                              "../../en_dict.txt")
+_C.OCR.h_thr=8
+_C.OCR.filter_thr=0.7
 
 _C.PT_DET = CN()
 _C.PT_DET.ckpt = ""

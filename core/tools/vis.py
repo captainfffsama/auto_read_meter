@@ -27,10 +27,6 @@ def draw_frame(img, img_info: ImageInfoContainer):
 
     for obj_idx, meter_info in enumerate(img_info.meters_info):
         meter_tl = meter_info.meter_rect[:2]
-        if meter_tl[-1] > 60:
-            base_pos = meter_tl
-        else:
-            base_pos = meter_info.meter_rect[-2:]
 
         cv2.rectangle(frame, meter_tl, meter_info.meter_rect[-2:],
                       COLOR_MAP["2"], base_size)
@@ -38,7 +34,15 @@ def draw_frame(img, img_info: ImageInfoContainer):
             cv2.putText(frame, str(meter_info.num),
                         (meter_tl[0] - 10, meter_tl[1] - 10), font, base_size,
                         COLOR_MAP["3"], 2)
+        if meter_tl[-1] > 60:
+            base_pos = meter_tl
+        else:
+            base_pos = meter_info.meter_rect[-2:]
         # TODO: draw messages
+        for i,msg in enumerate(meter_info.messages):
+            cv2.putText(frame, str(msg),
+                        (meter_tl[0] + i*10, meter_tl[1]+i*10), font, max(1,base_size//2),
+                        COLOR_MAP["3"], 1)
         if meter_info.circle_pt[0] < 0:
             cv2.circle(frame, meter_info.circle_pt, 2*base_size, COLOR_MAP["3"], -1)
 

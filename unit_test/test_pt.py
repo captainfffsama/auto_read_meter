@@ -77,10 +77,10 @@ def main(img_path,det_model,save_dir="",save_crop=False,show=True,gen_label=Fals
             print("{} label save done!".format(img_path))
 
 if __name__ == "__main__":
-    ckpt="/data/experiments_data/point_weight/3pt.ckpt"
+    ckpt="/data/experiments_data/point_weight/3pt_1.ckpt"
     det_model = init_model(ckpt)
-    img_path="/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/2"
+    img_path="/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/another"
     # img_path="/data/own_dataset/indoor_meter/VA_indoor_meter/20211207"
     # img_path="/home/chiebotgpuhq/Pictures/摄像头"
-    save_dir="/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/2"
+    save_dir="/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/another"
     main(img_path,det_model,save_dir,False,False,True)
