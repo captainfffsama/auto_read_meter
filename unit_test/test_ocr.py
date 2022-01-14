@@ -25,7 +25,7 @@ def parse_args():
 
 
 def draw_ocr_result(ocr_model,img_path):
-    result = ocr_model(img_path, no_filter=True)
+    result,status = ocr_model(img_path, no_filter=True)
 
 
     image = Image.open(img_path).convert('RGB')
@@ -37,7 +37,7 @@ def draw_ocr_result(ocr_model,img_path):
     im_show.show(title=img_path)
 
 def main(args):
-    ocr =OCRModel(args.OCR.DET.det_model_dir, **args.OCR.REG)
+    ocr =OCRModel(**args.OCR)
 
     imgs_path = get_all_file_path(args.data_path)
 

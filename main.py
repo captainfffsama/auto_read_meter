@@ -14,7 +14,7 @@ from torchvision import transforms
 from core.config.base_config import get_cfg_defaults
 
 from core.pt_detection.pt_det_net import PtDetInfer, PointDetectNet
-from core.ocr.pp_ocr import OCRModel
+from core.ocr.ocr_2 import OCRModel
 from core.meter_det.darknet.d_yolo import DarknetDet
 
 from core.file_reader import DataSequence
@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument(
         "--cfg",
         type=str,
-        default="./config/cfgv2.yaml",
+        default="./config/cfgv3.yaml",
         help="",
     )
     args = parser.parse_args()
@@ -44,11 +44,22 @@ def init_model(args):
         model.load_state_dict(params, strict=False)
     model = PtDetInfer(model)
 
-    ocr = OCRModel(**args.OCR)
+    ocr = OCRModel(**args.OCR_TEST)
 
     meter_det = DarknetDet(**args.METER_DET)
 
     return model, ocr, meter_det
+
+class VideoRecorder(object):
+    def __init__(self,save_path,fps=10,size=(1280,720)):
+        fourcc=cv2.VideoWriter_fourcc(*'MJPG')
+        self.recoder=cv2.VideoWriter(save_path,fourcc,fps,size)
+
+    def __enter__(self):
+        return self.recoder
+
+    def __exit__(self,type, value, traceback):
+        self.recoder.release()
 
 
 def main(args):
@@ -65,18 +76,20 @@ def main(args):
                        img_resize=(416, 416),
                        base_trans=basic_transform)
 
-    for data in data_loader():
-        img, img_path = data
-        final_result, draw_info_container = model_iner(img)
-        print(img_path)
-        result_img = draw_frame(img, draw_info_container)
-        if "image" == data_loader.type:
-            D.show_img(result_img)
-        else:
-            cv2.imshow("frame", result_img)
-            inputkey = cv2.waitKey(20)
-            if ord("q") == inputkey:
-                data_loader.stop()
+    with VideoRecorder("/data/1.avi") as v:
+        for data in data_loader():
+            img, img_path = data
+            final_result, draw_info_container = model_iner(img)
+            print(img_path)
+            result_img = draw_frame(img, draw_info_container,False)
+            v.write(result_img)
+            if "image" == data_loader.type:
+                D.show_img(result_img)
+            else:
+                cv2.imshow("frame", result_img)
+                inputkey = cv2.waitKey(20)
+                if ord("q") == inputkey:
+                    data_loader.stop()
 
 
 if __name__ == "__main__":

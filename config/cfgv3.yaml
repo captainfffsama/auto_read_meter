@@ -4,10 +4,12 @@ METER_DET:
   weights: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.weights"
   thr: 0.8
   class_filter: ["meter_square"]
-OCR:
-  det_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec/2"
-  det_db_box_thresh: 0.1
-  det_db_unclip_ratio: 1.5
+
+OCR_TEST:
+  config_file: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec/3/yolov4-tiny.cfg"
+  names_file: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec/3/labels.names"
+  weights: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec/3/yolov4-tiny_best.weights"
+  thr: 0.3
 
   rec_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
   rec_char_type: "en"
@@ -23,4 +25,5 @@ PT_DET:
 
 # data_path: "cam:0"
 # data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/debug"
-data_path: "/data/own_dataset/indoor_meter/test6"
+# data_path: "/data/own_dataset/indoor_meter/test6"
+data_path: "/home/chiebotgpuhq/Share/win_share/22222"

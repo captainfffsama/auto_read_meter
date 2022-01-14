@@ -85,7 +85,7 @@ class InferToolsMixin(object):
                 candicate_k.append(diff_count_list[i][0])
             else:
                 break
-        candicate_k_t=[x for x in candicate_k if x>0]
+        candicate_k_t = [x for x in candicate_k if x > 0]
         if not candicate_k_t:
             breakpoint()
             raise ValueError("candicate should not be empty")
@@ -100,7 +100,6 @@ class InferToolsMixin(object):
                      for i in ocr_r]
         base_angle = min(ocr_angle, key=lambda x: x[0])[0]
         ocr_angle = [(int(i[0] - base_angle), i[1]) for i in ocr_angle]
-        angle_diff = 360
 
         print("original ocr_angle:", ocr_angle)
         # 添加头尾刻度修
@@ -134,7 +133,7 @@ class InferToolsMixin(object):
 
         difference_dict = defaultdict(list)
         # TODO: 这里逻辑需要再次梳理
-        start_tmp = 1 if zero_scale_is_exist else 2
+        start_tmp = 1
         end_tmp = len(ocr_angle) if max_scale_is_exist else len(ocr_angle) - 1
         for i in range(start_tmp, end_tmp):
             difference_dict[round(ocr_angle[i][-1] - ocr_angle[i - 1][-1],
@@ -142,12 +141,10 @@ class InferToolsMixin(object):
         # XXX: 改了策略,但是不能应对所有情况
         if not difference_dict:
             print("difference_dict should not be empty")
-            breakpoint()
-        for i in difference_dict.keys():
-            if i ==0:
-                breakpoint()
+            raise ValueError("difference_dict should not be empty")
         diff = self.get_dict_diff(difference_dict)
 
+        angle_diff = 360
         for i in diff[-1]:
             if abs(ocr_angle[i[0]][0] - ocr_angle[i[1]][0]) < angle_diff:
                 angle_diff = abs(ocr_angle[i[0]][0] - ocr_angle[i[1]][0])
@@ -168,22 +165,25 @@ class InferToolsMixin(object):
 
         # 中间补足
         insert_time = 0
+        # difference_dict k为刻度差,v中每个元素都是一对索引,指示了ocr_angle中对应的元素
         for k, v in difference_dict.items():
-            current_insert_time = k // scale_diff
+            current_insert_time = (k // scale_diff)
             for idx_pair in v:
+                #NOTE: 这样插值更加准确
+                angle_diff=(ocr_angle[idx_pair[1]][0] - ocr_angle[idx_pair[0]][0])/current_insert_time
                 for i in range(1, int(current_insert_time)):
                     need_insert_idx = idx_pair[0] + insert_time
                     ocr_angle.insert(
                         need_insert_idx + 1,
                         (
-                            ocr_angle[need_insert_idx][0] + angle_diff * i,
-                            scale_diff * i + ocr_angle[need_insert_idx][-1],
+                            ocr_angle[need_insert_idx][0] + angle_diff,
+                            scale_diff+ ocr_angle[need_insert_idx][-1],
                         ),
                     )
                     insert_time += 1
-        if not zero_scale_is_exist:
-            ocr_angle.insert(1, ((ocr_angle[0][0] + ocr_angle[1][0]) / 2,
-                                 (ocr_angle[0][1] + ocr_angle[1][1]) / 2))
+        # if not zero_scale_is_exist:
+        #     ocr_angle.insert(1, ((ocr_angle[0][0] + ocr_angle[1][0]) / 2,
+        #                          (ocr_angle[0][1] + ocr_angle[1][1]) / 2))
         print("fix over:", ocr_angle)
 
         return ocr_angle, base_angle
@@ -209,6 +209,8 @@ class InferToolsMixin(object):
                                       key=lambda x: abs(x[0] - spt1_angle))
         spt2_scale_sort_list = sorted(ocr_angle,
                                       key=lambda x: abs(x[0] - spt2_angle))
+        print("sp1 angle:",spt1_angle)
+        print("spt2 angle:",spt2_angle)
         if spt1_scale_sort_list[0] == spt2_scale_sort_list[0]:
             if abs(spt1_scale_sort_list[0][0] -
                    spt1_angle) > abs(spt2_scale_sort_list[0][0] - spt2_angle):
@@ -221,9 +223,13 @@ class InferToolsMixin(object):
             spt1_scale = spt1_scale_sort_list[0][-1]
             spt2_scale = spt2_scale_sort_list[0][-1]
 
-        if spt1_scale == spt2_scale:
-            print("detect some thing wrong")
+        # 若两者过近则认为是指到了同一刻度
+        if abs(spt1_angle - spt2_angle) < 3:
             return spt1_scale
+
+        # if spt1_scale == spt2_scale:
+        #     print("detect some thing wrong")
+        #     return spt1_scale
 
         big_anlge = spt1_angle if spt1_scale > spt2_scale else spt2_angle
         big_s = spt1_scale if spt1_scale > spt2_scale else spt2_scale
@@ -247,16 +253,17 @@ class Infer(InferToolsMixin):
         self.ocr_model = ocr_model
         self.pt_model = pt_model
         self.pt_model_input_precess = partial(
-            img_deal, **dict(img_resize=img_resize, basic_transform=base_trans))
+            img_deal, **dict(img_resize=img_resize,
+                             basic_transform=base_trans))
         self.debug_info_container = ImageInfoContainer()
 
     def __call__(self, ori_img: np.ndarray):
         self.debug_info_container.clear()
         final_result = []
         with torch.no_grad():
-            meter_det_result,_= self.meter_det(ori_img)
+            meter_det_result, _ = self.meter_det(ori_img)
             # DEBUG:
-            print("meter_det_result:  ",meter_det_result)
+            print("meter_det_result:  ", meter_det_result)
             if len(meter_det_result) < 1:
                 self.debug_info_container.global_info.append(
                     "can no find meter")
@@ -271,16 +278,27 @@ class Infer(InferToolsMixin):
                     continue
                 meter_img, fix_pos = self.get_meter_img(ori_img, one_md_result)
 
-                img, resize_rate, ori_hw = self.pt_model_input_precess (meter_img)
+                # NOTE: 很奇怪的会出现一些shape为0的 meter_img
+                if not all(meter_img.shape):
+                    continue
+                img, resize_rate, ori_hw = self.pt_model_input_precess(
+                    meter_img)
                 pt_result = self.pt_model(img, resize_rate)
                 obj_debug_info.pt_result = {
                     k: [(*pos_fix(x[:2], fix_pos), x[-1]) for x in v]
                     for k, v in pt_result.items()
                 }
-                ocr_result,ocr_status = self.ocr_model(meter_img)
+                ocr_result, ocr_status = self.ocr_model(meter_img)
 
                 obj_debug_info.ocr_result = [(pos_fix(x[0], fix_pos), x[-1])
                                              for x in ocr_result]
+                try:
+                    circle_pt, radius = self.get_meter_center(pt_result, ori_hw)
+                except Exception as e:
+                    print("can not find meter center")
+                    continue
+                obj_debug_info.circle_pt = circle_pt
+
                 if ocr_status != OCRStatus.OK:
                     pprint(ocr_result)
                     obj_debug_info.messages.append("ocr result too less")
@@ -288,22 +306,24 @@ class Infer(InferToolsMixin):
                         obj_debug_info)
                     continue
 
-                circle_pt, radius = self.get_meter_center(pt_result, ori_hw)
-                obj_debug_info.circle_pt = circle_pt
                 if radius < 0:
-                    obj_debug_info.messages.append("can not find circle center")
+                    obj_debug_info.messages.append(
+                        "can not find circle center")
                     self.debug_info_container.meters_info.append(
                         obj_debug_info)
                     continue
                 if ocr_status == OCRStatus.OK:
-                    ocr_angle, base_angle = self.fix_ocr_scale(
-                        ocr_result, circle_pt, pt_result["min_scale"][0][:2],
-                        pt_result["max_scale"][0][:2])
-
-                    num = self.get_num(ocr_angle, base_angle, circle_pt, pt_result)
+                    try:
+                        ocr_angle, base_angle = self.fix_ocr_scale(
+                            ocr_result, circle_pt, pt_result["min_scale"][0][:2],
+                            pt_result["max_scale"][0][:2])
+                    except Exception as e:
+                        continue
+                    num = self.get_num(ocr_angle, base_angle, circle_pt,
+                                       pt_result)
                     obj_debug_info.num = num
                 else:
-                    num=-1
+                    num = -1
                 final_result.append((tuple(one_md_result[1:]), num))
                 self.debug_info_container.meters_info.append(obj_debug_info)
 

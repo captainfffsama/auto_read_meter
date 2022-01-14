@@ -20,6 +20,8 @@ _C.METER_DET.class_filter = ()
 
 _C.OCR = CN()
 _C.OCR.det_model_dir = ""
+_C.OCR.det_db_box_thresh= 0.7
+_C.OCR.det_db_unclip_ratio= 1.8
 
 _C.OCR.rec_model_dir = ""
 _C.OCR.rec_char_type = ""
@@ -28,6 +30,21 @@ _C.OCR.rec_char_dict_path = os.path.join(CURRENT_FILE_DIR,
                                              "../../en_dict.txt")
 _C.OCR.h_thr=8
 _C.OCR.filter_thr=0.7
+
+_C.OCR_TEST=CN()
+_C.OCR_TEST.config_file = ""
+_C.OCR_TEST.names_file = ""
+_C.OCR_TEST.weights = ""
+_C.OCR_TEST.thr = 0.5
+_C.OCR_TEST.class_filter = ("box",)
+
+_C.OCR_TEST.rec_model_dir = ""
+_C.OCR_TEST.rec_char_type = ""
+_C.OCR_TEST.rec_image_shape = " 3,32,100"
+_C.OCR_TEST.rec_char_dict_path = os.path.join(CURRENT_FILE_DIR,
+                                             "../../en_dict.txt")
+_C.OCR_TEST.h_thr=8
+_C.OCR_TEST.filter_thr=0.7
 
 _C.PT_DET = CN()
 _C.PT_DET.ckpt = ""

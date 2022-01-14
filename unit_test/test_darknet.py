@@ -16,7 +16,7 @@ from tqdm import tqdm
 import debug_tools as D
 
 def padding(img):
-    ret = cv2.copyMakeBorder(img, 2000, 2000, 2000, 2000, cv2.BORDER_CONSTANT, value=(0,0,0))
+    ret = cv2.copyMakeBorder(img, 1000, 1000, 1000, 1000, cv2.BORDER_CONSTANT, value=(0,0,0))
     return ret
 
 def main(img_path,det_model,save_dir="",save_crop=False,show=True,gen_det_xml=False):
@@ -37,7 +37,7 @@ def main(img_path,det_model,save_dir="",save_crop=False,show=True,gen_det_xml=Fa
             file_name=os.path.basename(img_path).split(".")[0]
             try:
                 for idx,r_i in enumerate(r):
-                    pos=[i-2000 for i in r_i[1:]]
+                    pos=[i-1000 for i in r_i[1:]]
                     img=ori_img[pos[1]:pos[3],pos[0]:pos[2],:]
                     cv2.imwrite(os.path.join(save_dir,file_name+str(idx)+".jpg"),img)
             except:
@@ -117,14 +117,6 @@ def generate_xml_label(img_path,det_result,save_dir):
     h,w,c=cv2.imread(img_path).shape
     dump_xml((img_name,w,h,c),final_det_r,os.path.join(save_dir,img_name.replace(".jpg",".xml")))
 
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
     det_model = DarknetDet(
         "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.cfg",
@@ -135,8 +127,8 @@ if __name__ == "__main__":
             "meter_square",
         })
 
-    img_path="/data/own_dataset/indoor_meter/VA_indoor_meter/ex2"
+    img_path="/home/chiebotgpuhq/Pictures/piccccc"
     # img_path="/data/own_dataset/indoor_meter/VA_indoor_meter/20211207"
     # img_path="/home/chiebotgpuhq/Pictures/摄像头"
-    save_dir="/data/own_dataset/indoor_meter/VA_indoor_meter/ex5"
-    main(img_path,det_model,save_dir,False,False,True)
+    save_dir="/home/chiebotgpuhq/Pictures/saveeeee"
+    main(img_path,det_model,save_dir,True,False,False)

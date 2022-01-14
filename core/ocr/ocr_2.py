@@ -13,8 +13,9 @@ import numpy as np
 import cv2
 import numpy as np
 import paddleocr as pocr
-from tools.infer import predict_system
+from tools.infer.predict_rec import TextRecognizer
 from ppstructure.utility import init_args
+from core.meter_det.darknet.d_yolo import DarknetDet
 from core.status_enum import OCRStatus
 
 import debug_tools as D
@@ -28,22 +29,37 @@ def get_ppocr_default_args():
     parser.add_argument("--type", type=str, default='ocr')
     return parser.parse_args()
 
-class ChiebotOCR(predict_system.TextSystem):
+
+class ChiebotOCR(object):
     def __init__(self,
-                 det_model_dir,
+                 config_file,
+                 names_file,
+                 weights,
+                 thr,
+                 class_filter,
                  rec_model_dir,
                  rec_image_shape,
                  rec_char_dict_path,
                  rec_char_type=None,
                  **kwargs):
         args = get_ppocr_default_args()
-        args.__dict__["det_model_dir"] = det_model_dir
         args.__dict__["rec_image_shape"] = rec_image_shape
         args.__dict__["rec_model_dir"] = rec_model_dir
         args.__dict__["rec_char_type"] = rec_char_type
         args.__dict__["rec_char_dict_path"] = rec_char_dict_path
         args.__dict__.update(**kwargs)
-        super().__init__(args)
+        self.rec_model = TextRecognizer(args)
+        self.det_model = DarknetDet(config_file,
+                                    names_file,
+                                    weights,
+                                    thr,
+                                    class_filter=class_filter)
+
+    def rect2pt(self, rect):
+        w = rect[2] - rect[0]
+        h = rect[3] - rect[1]
+        return [[rect[0], rect[1]], [rect[0] + w, rect[1]],
+                [rect[0]+w, rect[1] + h], [rect[0], rect[1] + h]]
 
     def __call__(self, img, cls=True):
         if isinstance(img, str):
@@ -55,20 +71,26 @@ class ChiebotOCR(predict_system.TextSystem):
                 return None
         if isinstance(img, np.ndarray) and len(img.shape) == 2:
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        dt_boxes, rec_res = super().__call__(img, cls)
-        return [[box.tolist(), res] for box, res in zip(dt_boxes, rec_res)]
+
+        det_result, _ = self.det_model(img)
+        rec_imgs = []
+        for obj in det_result:
+            rec_imgs.append(img[obj[2]:obj[4], obj[1]:obj[3], :])
+        rec_result, _ = self.rec_model(rec_imgs)
+        return [[self.rect2pt(x[1:]), y] for x, y in zip(det_result, rec_result)]
+
 
 class OCRModel(object):
     def __init__(self, *args, **kwargs):
         self.ocr_engine = ChiebotOCR(*args, **kwargs)
         self.h_thr = 8
-        self.filter_thr=0.7
-        self._init_ocrmodel_arg(kwargs,["h_thr","filter_thr"])
+        self.filter_thr = 0.7
+        self._init_ocrmodel_arg(kwargs, ["h_thr", "filter_thr"])
 
-    def _init_ocrmodel_arg(self,kwargs:dict,ocrmodel_arg:list):
+    def _init_ocrmodel_arg(self, kwargs: dict, ocrmodel_arg: list):
         for arg in ocrmodel_arg:
             if arg in kwargs.keys():
-                setattr(self,arg,kwargs.pop(arg))
+                setattr(self, arg, kwargs.pop(arg))
 
     def filter_result(self, result):
         # 按照内容过滤
@@ -81,8 +103,8 @@ class OCRModel(object):
             if point_num > 1:
                 continue
             num_str: str = content[-1][0].replace(".", "").strip()
-            if num_str.isnumeric() and (content[-1][1] > self.filter_thr) and (len(
-                    content[-1][0]) < 6):
+            if num_str.isnumeric() and (content[-1][1] > self.filter_thr) and (
+                    len(content[-1][0]) < 6):
                 x = 0
                 y = 0
                 h = (abs(content[0][0][1] - content[0][3][1]) +
@@ -111,23 +133,22 @@ class OCRModel(object):
         else:
             final_result = self.filter_result(result)
         status = OCRStatus.OK
-        print("final_result: ",final_result)
-        print("ocr real result: ",result)
+        print("final_result: ", final_result)
+        print("ocr real result: ", result)
         if not result:
             status = OCRStatus.NO_DETECT
         if len(final_result) < 2:
             status = OCRStatus.LESS_DETCT
         # if status !=OCRStatus.OK:
         #     breakpoint()
-        print(final_result)
         return final_result, status
 
 
-if __name__ == "__main__":
-    DET_MODEL_DIR = "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec"
-    REC_MODEL_DIR = "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
-    REC_CHAR_TYPE = "en"
-    REC_IMG_SHAPE = "3,32,100"
-    REC_CHAR_DICT_PATH = "/home/chiebotgpuhq/MyCode/python/paddle/PaddleOCR/ppocr/utils/ppocr_keys_v1.txt"
-    a = ChiebotOCR(DET_MODEL_DIR, REC_MODEL_DIR, REC_IMG_SHAPE,
-                   REC_CHAR_DICT_PATH, REC_IMG_SHAPE)
+# if __name__ == "__main__":
+#     DET_MODEL_DIR = "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec"
+#     REC_MODEL_DIR = "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
+#     REC_CHAR_TYPE = "en"
+#     REC_IMG_SHAPE = "3,32,100"
+#     REC_CHAR_DICT_PATH = "/home/chiebotgpuhq/MyCode/python/paddle/PaddleOCR/ppocr/utils/ppocr_keys_v1.txt"
+#     a = ChiebotOCR(DET_MODEL_DIR, REC_MODEL_DIR, REC_IMG_SHAPE,
+#                    REC_CHAR_DICT_PATH, REC_IMG_SHAPE)
