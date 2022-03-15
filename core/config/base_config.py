@@ -23,6 +23,14 @@ _C.OCR.det_model_dir = ""
 _C.OCR.det_db_box_thresh= 0.7
 _C.OCR.det_db_unclip_ratio= 1.8
 
+_C.OCR.det_limit_side_len= 2400
+_C.OCR.det_east_score_thresh = 0.8
+_C.OCR.det_east_cover_thresh = 0.1
+_C.OCR.det_east_nms_thresh = 0.2
+_C.OCR.det_algorithm= "DB"
+
+_C.OCR.det_cfg_path=""
+
 _C.OCR.rec_model_dir = ""
 _C.OCR.rec_char_type = ""
 _C.OCR.rec_image_shape = " 3,32,100"

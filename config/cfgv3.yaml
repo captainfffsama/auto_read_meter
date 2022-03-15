@@ -16,8 +16,8 @@ OCR_TEST:
   # 这里空格不要去除
   rec_image_shape: " 3,32,100 "
   # rec_char_dict_path: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/num_dict.txt"
-  h_thr: 8
-  filter_thr: 0.8
+  h_thr: 100
+  filter_thr: 0.5
 
 
 PT_DET:
@@ -26,4 +26,5 @@ PT_DET:
 # data_path: "cam:0"
 # data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/debug"
 # data_path: "/data/own_dataset/indoor_meter/test6"
-data_path: "/home/chiebotgpuhq/Share/win_share/22222"
+# data_path: "/home/chiebotgpuhq/Share/win_share/22222"
+data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/4"

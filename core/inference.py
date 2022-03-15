@@ -79,7 +79,8 @@ class InferToolsMixin(object):
                 diff_count_list[0][0],
             ]
         except Exception as e:
-            breakpoint()
+            raise e
+            # breakpoint()
         for i in range(1, len(diff_count_list)):
             if diff_count_list[i][-1] == diff_count_list[0][-1]:
                 candicate_k.append(diff_count_list[i][0])
@@ -87,7 +88,7 @@ class InferToolsMixin(object):
                 break
         candicate_k_t = [x for x in candicate_k if x > 0]
         if not candicate_k_t:
-            breakpoint()
+            # breakpoint()
             raise ValueError("candicate should not be empty")
         diff_k = min(candicate_k_t)
         return diff_k, diff_dict[diff_k]
@@ -317,11 +318,11 @@ class Infer(InferToolsMixin):
                         ocr_angle, base_angle = self.fix_ocr_scale(
                             ocr_result, circle_pt, pt_result["min_scale"][0][:2],
                             pt_result["max_scale"][0][:2])
+                        num = self.get_num(ocr_angle, base_angle, circle_pt,
+                                       pt_result)
+                        obj_debug_info.num = num
                     except Exception as e:
                         continue
-                    num = self.get_num(ocr_angle, base_angle, circle_pt,
-                                       pt_result)
-                    obj_debug_info.num = num
                 else:
                     num = -1
                 final_result.append((tuple(one_md_result[1:]), num))

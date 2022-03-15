@@ -4,24 +4,22 @@ METER_DET:
   weights: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.weights"
   thr: 0.8
   class_filter: ["meter_square"]
-OCR:
-  det_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec/5"
-  det_db_box_thresh: 0.6
-  det_db_unclip_ratio: 1.5
 
-  rec_model_dir: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/reg/2"
-  rec_char_type: "en"
-  # 这里空格不要去除
-  rec_image_shape: " 3,32,100 "
-  # rec_char_dict_path: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/num_dict.txt"
-  h_thr: 80
-  filter_thr: 0.5
+OCR_TEST:
+  config_file: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec/6/yolov4-tiny.cfg"
+  names_file: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec/6/labels.names"
+  weights: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/ppocr/detec/6/yolov4-tiny_best.weights"
+  thr: 0.3
+  class_filter: []
+  h_thr: 100
+  filter_thr: 0.3
 
 
 PT_DET:
   ckpt: "/data/experiments_data/point_weight/3pt_1.ckpt"
 
-# data_path: "cam:0"
+data_path: "cam:0"
 # data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/debug"
 # data_path: "/data/own_dataset/indoor_meter/test6"
-data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/5"
+# data_path: "/home/chiebotgpuhq/Share/win_share/22222"
+# data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/5"

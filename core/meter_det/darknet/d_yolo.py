@@ -61,7 +61,15 @@ class DarknetDet(object):
     def result_process(self, det_result, resize_rate):
         final_result = []
         for obj in det_result:
-            if obj[0] in self.class_filter:
+            if self.class_filter:
+                if obj[0] in self.class_filter:
+                    cx, cy,w,h = [x/resize_rate for x in obj[-1]]
+                    x1=int(cx-w/2)
+                    y1=int(cy-h/2)
+                    x2=int(cx+w/2)
+                    y2=int(cy+h/2)
+                    final_result.append((obj[0], x1, y1, x2, y2))
+            else:
                 cx, cy,w,h = [x/resize_rate for x in obj[-1]]
                 x1=int(cx-w/2)
                 y1=int(cy-h/2)

@@ -14,7 +14,8 @@ from torchvision import transforms
 from core.config.base_config import get_cfg_defaults
 
 from core.pt_detection.pt_det_net import PtDetInfer, PointDetectNet
-from core.ocr.ocr_2 import OCRModel
+from core.ocr.ocr_3 import OCRModel
+# from core.ocr.pp_ocr import OCRModel
 from core.meter_det.darknet.d_yolo import DarknetDet
 
 from core.file_reader import DataSequence
@@ -29,7 +30,7 @@ def parse_args():
     parser.add_argument(
         "--cfg",
         type=str,
-        default="./config/cfgv3.yaml",
+        default="./config/cfgv5.yaml",
         help="",
     )
     args = parser.parse_args()
@@ -82,7 +83,7 @@ def main(args):
             final_result, draw_info_container = model_iner(img)
             print(img_path)
             result_img = draw_frame(img, draw_info_container,False)
-            v.write(result_img)
+            # v.write(result_img)
             if "image" == data_loader.type:
                 D.show_img(result_img)
             else:

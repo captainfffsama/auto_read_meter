@@ -37,6 +37,7 @@ class ChiebotOCR(predict_system.TextSystem):
                  rec_char_type=None,
                  **kwargs):
         args = get_ppocr_default_args()
+        print(args)
         args.__dict__["det_model_dir"] = det_model_dir
         args.__dict__["rec_image_shape"] = rec_image_shape
         args.__dict__["rec_model_dir"] = rec_model_dir

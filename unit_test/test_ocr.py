@@ -22,11 +22,8 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
-
 def draw_ocr_result(ocr_model,img_path):
     result,status = ocr_model(img_path, no_filter=True)
-
 
     image = Image.open(img_path).convert('RGB')
     boxes = [line[0] for line in result]

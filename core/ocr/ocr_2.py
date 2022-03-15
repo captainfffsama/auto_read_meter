@@ -4,15 +4,8 @@
 @Date: 2021年 12月 21日 星期二 16:00:40 CST
 @Description:
 '''
-import argparse
-from typing_extensions import final
-
-from paddleocr import PaddleOCR, draw_ocr
-from PIL import Image
-import numpy as np
 import cv2
 import numpy as np
-import paddleocr as pocr
 from tools.infer.predict_rec import TextRecognizer
 from ppstructure.utility import init_args
 from core.meter_det.darknet.d_yolo import DarknetDet
