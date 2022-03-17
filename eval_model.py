@@ -93,8 +93,13 @@ def main(args):
         final_result, draw_info_container = model_iner(img)
         _, obj_info = parse_xml_info(img_path.replace(".jpg", ".xml"))
         print("=========================================")
+        print(img_path)
         det_tp, det_fp, det_fn, read_tp, read_fp = get_tpfpfn(
-            final_result, obj_info)
+            final_result, obj_info, img)
+        result_img = draw_frame(img, draw_info_container, False)
+        save_name=os.path.basename(img_path).split(".")[0]+"_r.jpg"
+        save_path =os.path.join(args.result_save_dir,save_name)
+        cv2.imwrite(save_path, result_img)
 
         all_det_tp += det_tp
         all_det_fp += det_fp
@@ -111,20 +116,22 @@ def main(args):
     print("total_precision: {}".format(total_precision))
     print("total_recall : {}".format(total_recall))
 
+
 def get_iou(r1, r2):
     r1_a = (r1[2] - r1[0]) * (r1[3] - r1[1])
     r2_a = (r2[2] - r2[0]) * (r2[3] - r2[1])
 
     i = (max(r1[0], r2[0]), max(r1[1], r2[1]), min(r1[2],
                                                    r2[2]), min(r1[3], r2[3]))
-    if (i[2] - i[0])<0 or (i[3] - i[1])<0:
+    if (i[2] - i[0]) < 0 or (i[3] - i[1]) < 0:
         return 0
     i_a = (i[2] - i[0]) * (i[3] - i[1])
-    return i_a / (r1_a + r2_a-i_a)
+    return i_a / (r1_a + r2_a - i_a)
 
 
 def get_tpfpfn(final_result: Sequence[Tuple[Tuple[int, int, int, int], float]],
                obj_info: Mapping[str, Sequence[Tuple[int, int, int, int]]],
+               img,
                thr: float = 0.3):
     det_tp = 0
     det_fp = 0
@@ -135,23 +142,32 @@ def get_tpfpfn(final_result: Sequence[Tuple[Tuple[int, int, int, int], float]],
     for k, v in obj_info.items():
         gt_info.extend([(a, k) for a in v])
     if not final_result:
-        final_result =[]
+        final_result = []
 
+    draw_flag = True
+    font = cv2.FONT_HERSHEY_PLAIN
+    h, w, c = img.shape
+    base_size = max(1, min(h, w) // 200)
     for obj_pre in final_result:
         for gt in gt_info[:]:
+            if draw_flag:
+                cv2.putText(img, gt[1], (gt[0][0], gt[0][3]), font, base_size,
+                            (0, 250, 250), 3)
             iou = get_iou(obj_pre[0], gt[0])
             if iou > thr:
                 det_tp += 1
-                reduce_v = (abs(obj_pre[1] - float(gt[1]))+0.000001) / (float(gt[1])+0.000001)
+                reduce_v = (abs(obj_pre[1] - float(gt[1])) +
+                            0.000001) / (float(gt[1]) + 0.000001)
                 if reduce_v > 0.05:
                     read_fp += 1
                 else:
                     read_tp += 1
                 gt_info.remove(gt)
-            elif iou<=thr and iou > 0:
-                det_fp+=1
+            elif iou <= thr and iou > 0:
+                det_fp += 1
             else:
                 pass
+        draw_flag = False
     det_fn += len(gt_info)
 
     return det_tp, det_fp, det_fn, read_tp, read_fp

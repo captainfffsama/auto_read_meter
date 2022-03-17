@@ -23,7 +23,7 @@ def draw_frame(img, img_info: ImageInfoContainer,detailed=True):
     base_size=max(1,min(h,w)//200)
     for idx, info in enumerate(img_info.global_info):
         cv2.putText(frame, info, (20, 30 + (idx * 30)), font, base_size,
-                    COLOR_MAP["general"], 2)
+                    COLOR_MAP["general"], 3)
 
     for obj_idx, meter_info in enumerate(img_info.meters_info):
         meter_tl = meter_info.meter_rect[:2]
@@ -32,8 +32,8 @@ def draw_frame(img, img_info: ImageInfoContainer,detailed=True):
                       COLOR_MAP["2"], base_size)
         if meter_info.num is not None:
             cv2.putText(frame, "{:.2f}".format(meter_info.num),
-                        (meter_tl[0] + 50, meter_tl[1] + 50), font, base_size,
-                        COLOR_MAP["3"], 2)
+                        (meter_tl[0], meter_tl[1]), font, base_size,
+                        COLOR_MAP["3"], 3)
         if detailed:
             if meter_tl[-1] > 60:
                 base_pos = meter_tl

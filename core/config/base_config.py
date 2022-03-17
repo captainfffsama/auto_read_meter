@@ -58,6 +58,7 @@ _C.PT_DET = CN()
 _C.PT_DET.ckpt = ""
 
 _C.data_path = ""
+_C.result_save_dir= "/data/own_dataset/indoor_meter/20220316/result"
 
 
 def get_cfg_defaults():
