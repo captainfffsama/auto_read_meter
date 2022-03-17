@@ -32,7 +32,7 @@ def draw_frame(img, img_info: ImageInfoContainer,detailed=True):
                       COLOR_MAP["2"], base_size)
         if meter_info.num is not None:
             cv2.putText(frame, "{:.2f}".format(meter_info.num),
-                        (meter_tl[0] - 10, meter_tl[1] - 10), font, base_size,
+                        (meter_tl[0] + 50, meter_tl[1] + 50), font, base_size,
                         COLOR_MAP["3"], 2)
         if detailed:
             if meter_tl[-1] > 60:

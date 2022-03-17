@@ -320,9 +320,10 @@ class Infer(InferToolsMixin):
                             pt_result["max_scale"][0][:2])
                         num = self.get_num(ocr_angle, base_angle, circle_pt,
                                        pt_result)
-                        obj_debug_info.num = num
                     except Exception as e:
-                        continue
+                        num=-1
+                        pass
+                    obj_debug_info.num = num
                 else:
                     num = -1
                 final_result.append((tuple(one_md_result[1:]), num))

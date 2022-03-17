@@ -5,6 +5,7 @@
 """
 import os
 import argparse
+from collections import defaultdict
 
 import cv2
 
@@ -21,6 +22,8 @@ from core.meter_det.darknet.d_yolo import DarknetDet
 from core.file_reader import DataSequence
 from core.inference import Infer
 from core.tools.vis import draw_frame
+
+from generate_xml import dump_xml
 
 import debug_tools as D
 
@@ -81,8 +84,8 @@ def main(args):
         for data in data_loader():
             img, img_path = data
             final_result, draw_info_container = model_iner(img)
-            print(img_path)
-            result_img = draw_frame(img, draw_info_container,False)
+            # save_xml(img,img_path,final_result)
+            result_img = draw_frame(img, draw_info_container,True)
             # v.write(result_img)
             if "image" == data_loader.type:
                 D.show_img(result_img)
@@ -91,6 +94,17 @@ def main(args):
                 inputkey = cv2.waitKey(20)
                 if ord("q") == inputkey:
                     data_loader.stop()
+
+def save_xml(img,img_path,result):
+    if not result:
+        result=[]
+    obj_info=defaultdict(list)
+    for box_info in result:
+        obj_info["{:.2f}".format(box_info[-1])].append(box_info[0])
+    out_path=img_path.replace('.jpg','.xml')
+    img_name=os.path.basename(img_path)
+    h,w,c=img.shape
+    dump_xml([img_name,w,h,c],obj_info,out_path)
 
 
 if __name__ == "__main__":

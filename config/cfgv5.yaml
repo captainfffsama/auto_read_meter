@@ -2,7 +2,7 @@ METER_DET:
   config_file: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.cfg"
   names_file: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.names"
   weights: "/home/chiebotgpuhq/MyCode/python/meter_auto_read/model_weight/meter_det/indoor.weights"
-  thr: 0.8
+  thr: 0.5
   class_filter: ["meter_square"]
 
 OCR_TEST:
@@ -18,8 +18,10 @@ OCR_TEST:
 PT_DET:
   ckpt: "/data/experiments_data/point_weight/3pt_1.ckpt"
 
-data_path: "cam:0"
+# data_path: "cam:0"
+# data_path: "/home/chiebotgpuhq/Share/win_share/333333"
+# data_path: "/data/own_dataset/indoor_meter/20220316/all"
 # data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/debug"
 # data_path: "/data/own_dataset/indoor_meter/test6"
 # data_path: "/home/chiebotgpuhq/Share/win_share/22222"
-# data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/5"
+data_path: "/data/own_dataset/indoor_meter/VA_indoor_meter/ex3/5"
