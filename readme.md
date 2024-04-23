@@ -1,4 +1,6 @@
 自动读表
+# 效果演示
+<iframe src="//player.bilibili.com/player.html?aid=1253712730&bvid=BV1gJ4m1n7nc&cid=1517427458&p=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
 # requirement
 paddleocr
 pytorch
