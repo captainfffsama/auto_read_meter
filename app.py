@@ -29,8 +29,6 @@ import debug_tools as D
 
 config_path="/home/chiebotgpuhq/MyCode/python/meter_auto_read/config/cfgv5.yaml"
 
-
-
 @st.cache(allow_output_mutation=True)
 def init_model(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
